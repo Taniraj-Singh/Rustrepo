@@ -8,10 +8,12 @@
 pub mod bytes;
 pub mod coding;
 pub mod comparator;
+pub mod histogram;
 pub mod logging;
 pub mod metrics;
 pub mod varint;
 
 pub use comparator::{BytewiseComparator, Comparator, InternalKeyComparator};
+pub use histogram::Histogram;
 pub use logging::Level;
 pub use metrics::{Metrics, MetricsSnapshot};

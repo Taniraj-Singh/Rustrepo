@@ -22,9 +22,13 @@
 //! [`DbIterator`], which merges all sources and applies MVCC visibility.
 
 mod iter;
+mod range;
+mod stats;
 mod table_cache;
 
 pub use iter::DbIterator;
+pub use range::RangeScan;
+pub use stats::LevelSummary;
 pub use table_cache::TableCache;
 
 use std::fs::OpenOptions;
@@ -38,6 +42,7 @@ use crate::iterator::{KvIterator, MergingIterator};
 use crate::key::{LookupKey, ParsedInternalKey, Sequence, ValueType};
 use crate::manifest::current_file_path;
 use crate::memtable::{LookupResult, MemTable};
+use crate::options::{ReadOptions, WriteOptions};
 use crate::snapshot::{Snapshot, SnapshotList};
 use crate::storage::{table_file_name, wal_file_name, LogWriter, WritableFile, LOCK_FILE};
 use crate::table::TableBuilder;
@@ -172,8 +177,13 @@ impl Cairn {
         self.write(txn.into_batch())
     }
 
-    /// Applies a [`WriteBatch`] atomically and durably.
-    pub fn write(&self, mut batch: WriteBatch) -> Result<()> {
+    /// Applies a [`WriteBatch`] atomically and durably with default options.
+    pub fn write(&self, batch: WriteBatch) -> Result<()> {
+        self.write_with(batch, &WriteOptions::default())
+    }
+
+    /// Applies a [`WriteBatch`] honoring per-call [`WriteOptions`] (e.g. `sync`).
+    pub fn write_with(&self, mut batch: WriteBatch, options: &WriteOptions) -> Result<()> {
         if batch.is_empty() {
             return Ok(());
         }
@@ -188,7 +198,7 @@ impl Cairn {
 
         // WAL first: durability before the write is visible.
         inner.wal.add_record(batch.as_bytes())?;
-        if self.config.sync_writes {
+        if options.is_sync() || self.config.sync_writes {
             inner.wal.sync()?;
             self.metrics.inc_wal_syncs();
         } else {
@@ -205,6 +215,20 @@ impl Cairn {
         Ok(())
     }
 
+    /// A single put honoring per-call [`WriteOptions`].
+    pub fn put_with(&self, key: &[u8], value: &[u8], options: &WriteOptions) -> Result<()> {
+        let mut batch = WriteBatch::new();
+        batch.put(key, value);
+        self.write_with(batch, options)
+    }
+
+    /// A single delete honoring per-call [`WriteOptions`].
+    pub fn delete_with(&self, key: &[u8], options: &WriteOptions) -> Result<()> {
+        let mut batch = WriteBatch::new();
+        batch.delete(key);
+        self.write_with(batch, options)
+    }
+
     // ---- reads -------------------------------------------------------------
 
     /// Reads the current value of `key`.
@@ -216,6 +240,15 @@ impl Cairn {
     /// Reads `key` as of `snapshot`.
     pub fn get_at(&self, key: &[u8], snapshot: &Snapshot) -> Result<Option<Vec<u8>>> {
         self.lookup(key, snapshot.sequence())
+    }
+
+    /// Reads `key` honoring [`ReadOptions`] (e.g. reading at a pinned snapshot).
+    pub fn get_with(&self, key: &[u8], options: &ReadOptions) -> Result<Option<Vec<u8>>> {
+        let seq = match options.snapshot_sequence() {
+            Some(s) => s,
+            None => self.lock().versions.last_sequence(),
+        };
+        self.lookup(key, seq)
     }
 
     fn lookup(&self, key: &[u8], seq: Sequence) -> Result<Option<Vec<u8>>> {
@@ -305,6 +338,15 @@ impl Cairn {
     /// Returns a forward scan as of `snapshot`.
     pub fn scan_at(&self, snapshot: &Snapshot) -> Result<DbIterator> {
         self.scan_at_sequence(snapshot.sequence())
+    }
+
+    /// Returns a forward scan honoring [`ReadOptions`].
+    pub fn scan_with(&self, options: &ReadOptions) -> Result<DbIterator> {
+        let seq = match options.snapshot_sequence() {
+            Some(s) => s,
+            None => self.lock().versions.last_sequence(),
+        };
+        self.scan_at_sequence(seq)
     }
 
     fn scan_at_sequence(&self, seq: Sequence) -> Result<DbIterator> {

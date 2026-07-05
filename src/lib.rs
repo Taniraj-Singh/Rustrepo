@@ -83,6 +83,7 @@ pub mod iterator;
 pub mod key;
 pub mod manifest;
 pub mod memtable;
+pub mod options;
 pub mod parser;
 pub mod recovery;
 pub mod serializer;
@@ -94,10 +95,11 @@ pub mod util;
 pub mod version;
 
 pub use crate::config::{CompressionKind, Config};
-pub use crate::db::{Cairn, DbIterator};
+pub use crate::db::{Cairn, DbIterator, LevelSummary, RangeScan};
 pub use crate::error::{Error, Result};
 pub use crate::iterator::KvIterator;
 pub use crate::key::{Sequence, ValueType};
+pub use crate::options::{ReadOptions, WriteOptions};
 pub use crate::snapshot::Snapshot;
 pub use crate::transaction::{Transaction, WriteBatch};
 
