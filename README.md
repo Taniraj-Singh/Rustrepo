@@ -189,12 +189,12 @@ panic, out-of-bounds access, or unbounded allocation.
 ```sh
 cargo install cargo-fuzz
 cargo +nightly fuzz build            # build all targets
-cargo +nightly fuzz run fuzz_compression
-cargo +nightly fuzz run fuzz_block
-cargo +nightly fuzz run fuzz_wal
-cargo +nightly fuzz run fuzz_table_footer
-cargo +nightly fuzz run fuzz_version_edit
-cargo +nightly fuzz run fuzz_write_batch
+cargo +nightly fuzz run compression_fuzzer
+cargo +nightly fuzz run block_fuzzer
+cargo +nightly fuzz run wal_fuzzer
+cargo +nightly fuzz run table_footer_fuzzer
+cargo +nightly fuzz run version_edit_fuzzer
+cargo +nightly fuzz run write_batch_fuzzer
 ```
 
 A small, neutral seed corpus lives under [`fuzz/corpus/`](fuzz/corpus/). It

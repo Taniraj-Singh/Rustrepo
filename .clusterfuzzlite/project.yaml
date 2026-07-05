@@ -1,0 +1,6 @@
+# ClusterFuzzLite project configuration for Cairn.
+language: rust
+fuzzing_engines:
+  - libfuzzer
+sanitizers:
+  - address

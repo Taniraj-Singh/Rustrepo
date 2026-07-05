@@ -4,11 +4,12 @@
 # perturb the main crate's dependency graph. Build the targets with:
 #
 #     cargo +nightly fuzz build
-#     cargo +nightly fuzz run fuzz_compression
+#     cargo +nightly fuzz run compression_fuzzer
 #
 # Each target asserts the crate's core safety property: no input, however
 # malformed, makes a decoder panic, read out of bounds, or allocate without
-# bound.
+# bound. Targets are named `<component>_fuzzer` so they are discovered by
+# ClusterFuzzLite / OSS-Fuzz tooling.
 
 [package]
 name = "cairn-fuzz"
@@ -33,43 +34,43 @@ members = ["."]
 debug = 1
 
 [[bin]]
-name = "fuzz_compression"
-path = "fuzz_targets/fuzz_compression.rs"
+name = "compression_fuzzer"
+path = "fuzz_targets/compression_fuzzer.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_block"
-path = "fuzz_targets/fuzz_block.rs"
+name = "block_fuzzer"
+path = "fuzz_targets/block_fuzzer.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_wal"
-path = "fuzz_targets/fuzz_wal.rs"
+name = "wal_fuzzer"
+path = "fuzz_targets/wal_fuzzer.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_table_footer"
-path = "fuzz_targets/fuzz_table_footer.rs"
+name = "table_footer_fuzzer"
+path = "fuzz_targets/table_footer_fuzzer.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_version_edit"
-path = "fuzz_targets/fuzz_version_edit.rs"
+name = "version_edit_fuzzer"
+path = "fuzz_targets/version_edit_fuzzer.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_write_batch"
-path = "fuzz_targets/fuzz_write_batch.rs"
+name = "write_batch_fuzzer"
+path = "fuzz_targets/write_batch_fuzzer.rs"
 test = false
 doc = false
 bench = false
