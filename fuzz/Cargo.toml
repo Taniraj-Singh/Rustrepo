@@ -1,0 +1,75 @@
+# Fuzzing crate for Cairn, driven by `cargo fuzz` (libFuzzer).
+#
+# This is a separate, non-published crate with its own workspace so it does not
+# perturb the main crate's dependency graph. Build the targets with:
+#
+#     cargo +nightly fuzz build
+#     cargo +nightly fuzz run fuzz_compression
+#
+# Each target asserts the crate's core safety property: no input, however
+# malformed, makes a decoder panic, read out of bounds, or allocate without
+# bound.
+
+[package]
+name = "cairn-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.cairn]
+path = ".."
+
+# Keep this crate out of the parent's build graph.
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_compression"
+path = "fuzz_targets/fuzz_compression.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_block"
+path = "fuzz_targets/fuzz_block.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_wal"
+path = "fuzz_targets/fuzz_wal.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_table_footer"
+path = "fuzz_targets/fuzz_table_footer.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_version_edit"
+path = "fuzz_targets/fuzz_version_edit.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_write_batch"
+path = "fuzz_targets/fuzz_write_batch.rs"
+test = false
+doc = false
+bench = false

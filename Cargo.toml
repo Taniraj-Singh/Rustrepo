@@ -1,0 +1,47 @@
+[package]
+name = "cairn"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+authors = ["Taniraj Singh <tanirajsingh574@gmail.com>"]
+license = "MIT"
+description = "Cairn: an embedded, dependency-free LSM-tree key-value storage engine written in safe Rust."
+repository = "https://github.com/Taniraj-Singh/Rustrepo"
+readme = "README.md"
+keywords = ["database", "lsm", "key-value", "storage-engine", "embedded"]
+categories = ["database-implementations", "data-structures"]
+
+# The engine is intentionally dependency-free: everything (varint coding,
+# CRC32, compression, bloom filters, LRU cache, WAL) is implemented from
+# scratch against the standard library only. This keeps the trust surface
+# small and the build reproducible.
+
+[lib]
+name = "cairn"
+path = "src/lib.rs"
+
+[features]
+default = []
+# Enables extra internal consistency assertions on hot paths. Off by default
+# because the checks cost cycles; handy when hunting corruption bugs.
+paranoid = []
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "unwind"
+
+[profile.bench]
+opt-level = 3
+lto = "thin"
+
+# Benchmarks use a hand-written harness (no criterion dependency) so they run
+# on stable Rust without pulling in the crates.io graph.
+[[bench]]
+name = "engine_bench"
+harness = false
+
+[[bench]]
+name = "codec_bench"
+harness = false
