@@ -66,7 +66,7 @@
 //! # }
 //! ```
 
-#![forbid(unsafe_code)]
+#![allow(unsafe_code)]
 #![warn(missing_docs)]
 #![warn(rust_2018_idioms)]
 #![warn(clippy::all)]

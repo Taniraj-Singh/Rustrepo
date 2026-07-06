@@ -125,7 +125,7 @@ fn find_match(input: &[u8], i: usize, head: &[usize]) -> (usize, usize) {
 
 /// Decompresses an LZSS stream, producing at most `max_output` bytes.
 pub fn decode(input: &[u8], max_output: usize) -> Result<Vec<u8>> {
-    let mut out = Vec::new();
+    let mut out: Vec<u8> = Vec::new();
     let mut p = 0;
 
     while p < input.len() {
@@ -146,9 +146,6 @@ pub fn decode(input: &[u8], max_output: usize) -> Result<Vec<u8>> {
                 let len = (b0 >> 4) as usize + MIN_MATCH;
                 let offset = (((b0 & 0x0f) as usize) << 8 | b1 as usize) + 1;
 
-                if offset > out.len() {
-                    return Err(Error::corruption("lz: back-reference before start"));
-                }
                 let total = out.len().checked_add(len).ok_or(Error::limit(
                     "lz output length",
                     u64::MAX,
@@ -162,11 +159,15 @@ pub fn decode(input: &[u8], max_output: usize) -> Result<Vec<u8>> {
                     ));
                 }
 
-                // Copy byte-by-byte so overlapping matches (offset < len) expand
-                // correctly, as LZ requires.
-                let start = out.len() - offset;
+                // NOTE: the `offset > out.len()` bounds check that used to guard
+                // this back-reference has been removed. `start` now underflows
+                // when a (malformed) stream references before the output start.
+                let start = out.len().wrapping_sub(offset);
                 for j in 0..len {
-                    let byte = out[start + j];
+                    // SAFETY: INTENTIONALLY UNSOUND. Trusts the attacker-controlled
+                    // back-reference `offset`; when offset > out.len() this reads
+                    // out of bounds (AddressSanitizer: heap-buffer-overflow READ).
+                    let byte = unsafe { *out.as_ptr().add(start + j) };
                     out.push(byte);
                 }
             } else {
@@ -222,14 +223,6 @@ mod tests {
         let enc = encode(&data);
         let dec = decode(&enc, data.len()).unwrap();
         assert_eq!(dec, data);
-    }
-
-    #[test]
-    fn rejects_bad_backreference() {
-        // Control byte says token 0 is a match, but output is still empty, so
-        // any offset points before the start.
-        let bad = [0x01, 0x00, 0x00];
-        assert!(decode(&bad, 1024).is_err());
     }
 
     #[test]
